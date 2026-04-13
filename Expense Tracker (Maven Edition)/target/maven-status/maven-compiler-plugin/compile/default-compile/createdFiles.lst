@@ -1,0 +1,6 @@
+com\expensetracker\model\Expense.class
+com\expensetracker\service\ExpenseService.class
+com\expensetracker\util\DBUtil.class
+com\expensetracker\app\App.class
+com\expensetracker\util\ConfigReader.class
+com\expensetracker\dao\ExpenseDAO.class

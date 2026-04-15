@@ -1,30 +1,100 @@
-package com.expensetracker.dao;
+package com.expensetracking.dao;
 
-import com.expensetracker.db.DBConnection;
+import com.expensetracking.model.Expense;
+import com.expensetracking.util.DBUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.sql.Connection;
-import java.sql.Date;
-import java.sql.PreparedStatement;
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ExpenseDAO {
 
-    public void addExpense(String category, double amount, String date) {
+    private static final Logger log = LoggerFactory.getLogger(ExpenseDAO.class);
 
-        String sql = "INSERT INTO expenses (category, amount, date) VALUES (?, ?, ?)";
+    public void addExpense(Expense e) {
 
-        try (Connection conn = DBConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+        String sql = "INSERT INTO expenses(category, amount, date) VALUES (?, ?, ?)";
 
-            stmt.setString(1, category);
-            stmt.setDouble(2, amount);
+        try (Connection conn = DBUtil.getDataSource().getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
 
+            ps.setString(1, e.getCategory());
+            ps.setDouble(2, e.getAmount());
+            ps.setDate(3, Date.valueOf(e.getDate()));
 
-            stmt.setDate(3, Date.valueOf(date));
+            ps.executeUpdate();
 
-            stmt.executeUpdate();
+            log.info("Expense added: {}", e.getCategory());
 
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (Exception ex) {
+            log.error("Error adding expense", ex);
+        }
+    }
+
+    public List<Expense> getAll() {
+
+        List<Expense> list = new ArrayList<>();
+
+        String sql = "SELECT * FROM expenses";
+
+        try (Connection conn = DBUtil.getDataSource().getConnection();
+             Statement st = conn.createStatement();
+             ResultSet rs = st.executeQuery(sql)) {
+
+            while (rs.next()) {
+                Expense e = new Expense();
+                e.setId(rs.getInt("id"));
+                e.setCategory(rs.getString("category"));
+                e.setAmount(rs.getDouble("amount"));
+                e.setDate(rs.getDate("date").toLocalDate());
+
+                list.add(e);
+            }
+
+            log.info("Fetched all expenses");
+
+        } catch (Exception ex) {
+            log.error("Error fetching expenses", ex);
+        }
+
+        return list;
+    }
+
+    public void updateAmount(int id, double amount) {
+
+        String sql = "UPDATE expenses SET amount=? WHERE id=?";
+
+        try (Connection conn = DBUtil.getDataSource().getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setDouble(1, amount);
+            ps.setInt(2, id);
+
+            ps.executeUpdate();
+
+            log.info("Updated expense id={}", id);
+
+        } catch (Exception ex) {
+            log.error("Update failed", ex);
+        }
+    }
+
+    public void deleteExpense(int id) {
+
+        String sql = "DELETE FROM expenses WHERE id=?";
+
+        try (Connection conn = DBUtil.getDataSource().getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, id);
+            ps.executeUpdate();
+
+            log.info("Deleted expense id={}", id);
+
+        } catch (Exception ex) {
+            log.error("Delete failed", ex);
         }
     }
 }
